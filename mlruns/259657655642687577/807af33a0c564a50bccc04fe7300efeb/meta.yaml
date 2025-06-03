@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/murat/Documents/py/[MK]_cardiac_patients/mlruns/259657655642687577/807af33a0c564a50bccc04fe7300efeb/artifacts
+end_time: 1748880788244
+entry_point_name: ''
+experiment_id: '259657655642687577'
+lifecycle_stage: active
+run_id: 807af33a0c564a50bccc04fe7300efeb
+run_name: trial_7
+run_uuid: 807af33a0c564a50bccc04fe7300efeb
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1748880785846
+status: 3
+tags: []
+user_id: murat

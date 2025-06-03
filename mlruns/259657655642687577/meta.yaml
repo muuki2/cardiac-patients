@@ -1,0 +1,6 @@
+artifact_location: file:///Users/murat/Documents/py/[MK]_cardiac_patients/mlruns/259657655642687577
+creation_time: 1748877590266
+experiment_id: '259657655642687577'
+last_update_time: 1748877590266
+lifecycle_stage: active
+name: heart_disease_neural_net
