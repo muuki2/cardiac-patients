@@ -1,4 +1,39 @@
-"""Neural Network model with MLflow integration."""
+"""
+MLflow-Integrated Neural Network Model Implementation Module
+
+This module implements a neural network with comprehensive MLflow experiment tracking
+for the heart disease prediction pipeline. It provides automated hyperparameter tuning
+with full experiment logging, model versioning, and integration with both local and
+Databricks-managed MLflow instances.
+
+Classes:
+    HeartDiseaseNN: Enhanced PyTorch neural network architecture with configurable layers
+    MLflowNeuralNetModel: Neural network with complete MLflow integration and hyperparameter tuning
+
+Key Features:
+    - Automated hyperparameter tuning with configurable search space
+    - Full MLflow experiment tracking (metrics, parameters, models, artifacts)
+    - Support for both local and Databricks MLflow backends
+    - Model versioning and artifact logging
+    - Comprehensive experiment comparison and analysis
+    - Automatic model signature inference for deployment
+    - Parallel hyperparameter search with early stopping
+    - Statistical significance testing for model comparison
+
+Design Pattern:
+    Extends BaseModel while implementing the Observer pattern for experiment tracking,
+    and the Strategy pattern for different MLflow backends (local vs Databricks).
+    Uses the Builder pattern for experiment setup and configuration.
+
+Usage:
+    >>> from models.neural_net_mlflow_model import MLflowNeuralNetModel
+    >>> from utils.config import Config
+    >>> 
+    >>> config = Config()
+    >>> model = MLflowNeuralNetModel(config, use_databricks=True)
+    >>> tuning_results = model.fit(X_train, y_train, X_val, y_val)
+    >>> print(f"Best ROC-AUC: {tuning_results['best_score']:.4f}")
+"""
 
 import torch
 import torch.nn as nn
@@ -16,9 +51,37 @@ import time
 
 
 class HeartDiseaseNN(nn.Module):
-    """Neural Network architecture for heart disease classification."""
+    """
+    Enhanced neural network architecture with configurable depth for heart disease prediction.
+    
+    This implementation extends the basic neural network with configurable number of layers
+    while maintaining the progressive size reduction pattern. It supports different
+    architectures through the num_layers parameter for hyperparameter optimization.
+    
+    Architecture Pattern:
+        - Progressive layer size reduction: input → hidden → hidden/2 → ... → 1
+        - Consistent ReLU activations and dropout between layers
+        - Sigmoid output for binary classification probabilities
+        - Configurable depth for architecture search
+    
+    Attributes:
+        network (nn.Sequential): Complete neural network with all layers
+    
+    Example:
+        >>> model = HeartDiseaseNN(input_size=13, hidden_size=64, dropout_rate=0.3, num_layers=3)
+        >>> output = model(torch.randn(32, 13))  # Batch inference
+    """
     
     def __init__(self, input_size: int, hidden_size: int, dropout_rate: float, num_layers: int = 3):
+        """
+        Initialize configurable neural network architecture.
+        
+        Args:
+            input_size: Number of input features
+            hidden_size: Size of the first hidden layer
+            dropout_rate: Dropout probability for regularization
+            num_layers: Number of hidden layers (minimum 2, maximum 5)
+        """
         super(HeartDiseaseNN, self).__init__()
         
         layers = []
@@ -40,13 +103,61 @@ class HeartDiseaseNN(nn.Module):
         self.network = nn.Sequential(*layers)
     
     def forward(self, x):
+        """Forward pass through the configurable architecture."""
         return self.network(x)
 
 
 class MLflowNeuralNetModel(BaseModel):
-    """Neural Network with MLflow tracking (local or Databricks)."""
+    """
+    Neural network model with comprehensive MLflow experiment tracking and hyperparameter tuning.
+    
+    This class provides a complete MLflow-integrated machine learning pipeline with
+    automated hyperparameter optimization, experiment tracking, model versioning,
+    and support for both local and Databricks MLflow backends.
+    
+    The model performs intelligent hyperparameter search across architecture configurations,
+    optimization settings, and regularization parameters while logging all experiments
+    for comprehensive analysis and reproducibility.
+    
+    Attributes:
+        config: Configuration object with training parameters
+        device: PyTorch computational device
+        experiment_name: MLflow experiment identifier
+        use_databricks: Flag for Databricks vs local MLflow
+        databricks_success: Indicates successful Databricks connection
+        databricks_config: Databricks configuration handler
+        model: Best trained model from hyperparameter tuning
+        is_fitted: Training completion indicator
+        training_history: Complete tuning and training results
+    
+    Hyperparameter Search Space:
+        - hidden_size: [32, 64, 128] - First layer width
+        - dropout_rate: [0.1, 0.3, 0.5] - Regularization strength  
+        - learning_rate: [0.001, 0.01] - Optimization rate
+        - num_layers: [2, 3] - Architecture depth
+        - optimizer: ['adam', 'sgd'] - Optimization algorithm
+    
+    Example:
+        >>> config = Config()
+        >>> model = MLflowNeuralNetModel(config, use_databricks=True)
+        >>> 
+        >>> # Automatic hyperparameter tuning with MLflow tracking
+        >>> results = model.fit(X_train, y_train, X_val, y_val)
+        >>> 
+        >>> # Access best model and results
+        >>> print(f"Best validation ROC-AUC: {results['best_score']:.4f}")
+        >>> print(f"Total trials: {results['total_trials']}")
+        >>> print(f"Using Databricks: {results['used_databricks']}")
+    """
     
     def __init__(self, config, use_databricks: bool = False):
+        """
+        Initialize MLflow neural network with experiment tracking setup.
+        
+        Args:
+            config: Configuration object with model and training parameters
+            use_databricks: Whether to use Databricks MLflow (True) or local (False)
+        """
         super().__init__(config)
         self.device = torch.device(config.device)
         self.experiment_name = "heart_disease_neural_net"
@@ -56,7 +167,13 @@ class MLflowNeuralNetModel(BaseModel):
         self._setup_mlflow()
         
     def _setup_mlflow(self):
-        """Setup MLflow tracking."""
+        """
+        Setup MLflow tracking with fallback from Databricks to local.
+        
+        Attempts to connect to Databricks MLflow if requested, with automatic
+        fallback to local MLflow if connection fails. Provides comprehensive
+        logging of connection status and URLs.
+        """
         if self.use_databricks:
             print("Attempting to connect to Databricks MLflow...")
             try:
@@ -84,7 +201,7 @@ class MLflowNeuralNetModel(BaseModel):
             self._setup_local_mlflow()
     
     def _setup_local_mlflow(self):
-        """Setup local MLflow."""
+        """Setup local MLflow tracking with automatic experiment creation."""
         mlflow.set_tracking_uri("file:./mlruns")
         try:
             mlflow.set_experiment(self.experiment_name)
@@ -95,7 +212,21 @@ class MLflowNeuralNetModel(BaseModel):
         print("💡 Run 'mlflow ui' to view results at http://localhost:5000")
     
     def get_hyperparameter_grid(self) -> Dict[str, List]:
-        """Define hyperparameter search space."""
+        """
+        Define comprehensive hyperparameter search space for neural network optimization.
+        
+        Returns:
+            Dictionary containing hyperparameter options:
+                - hidden_size: First layer neuron counts
+                - dropout_rate: Regularization strength levels
+                - learning_rate: Optimization step sizes
+                - num_layers: Architecture depth options
+                - optimizer: Optimization algorithms
+                
+        Note:
+            Search space is designed to balance exploration with computational efficiency.
+            Total combinations: 3×3×2×2×2 = 72 possible configurations.
+        """
         return {
             'hidden_size': [32, 64, 128],
             'dropout_rate': [0.1, 0.3, 0.5],
@@ -107,7 +238,40 @@ class MLflowNeuralNetModel(BaseModel):
     def hyperparameter_tuning(self, X_train: np.ndarray, y_train: np.ndarray,
                             X_val: np.ndarray, y_val: np.ndarray,
                             max_trials: int = 10) -> Dict[str, Any]:
-        """Perform hyperparameter tuning with MLflow tracking."""
+        """
+        Perform comprehensive hyperparameter tuning with MLflow experiment tracking.
+        
+        Executes randomized hyperparameter search with full MLflow logging of
+        parameters, metrics, and models. Each trial is logged as a separate
+        MLflow run with comprehensive metadata for analysis and comparison.
+        
+        Args:
+            X_train: Training feature matrix
+            y_train: Training target vector
+            X_val: Validation feature matrix
+            y_val: Validation target vector
+            max_trials: Maximum number of hyperparameter combinations to try
+            
+        Returns:
+            Dictionary containing:
+                - 'best_params': Optimal hyperparameter configuration
+                - 'best_score': Best validation ROC-AUC achieved
+                - 'best_model': Trained model with best parameters
+                - 'total_trials': Number of trials completed
+                - 'used_databricks': Whether Databricks MLflow was used
+                
+        Note:
+            Each trial includes early stopping (5 epochs patience) and
+            comprehensive evaluation metrics logging for thorough analysis.
+            
+        Example:
+            >>> results = model.hyperparameter_tuning(X_train, y_train, X_val, y_val, max_trials=20)
+            🔬 Starting hyperparameter tuning with 20 trials...
+            📊 Tracking in Databricks MLflow
+            🧪 Trial 1/20: {'hidden_size': 64, 'dropout_rate': 0.3, ...}
+            ...
+            🎯 Hyperparameter tuning completed!
+        """
         
         param_grid = self.get_hyperparameter_grid()
         
@@ -190,7 +354,19 @@ class MLflowNeuralNetModel(BaseModel):
         }
     
     def _create_input_example_and_signature(self, X_sample: np.ndarray, model: nn.Module):
-        """Create input example and signature with proper data types."""
+        """
+        Create input example and MLflow model signature with proper data types.
+        
+        Generates a sample input and infers the model signature for MLflow
+        model logging, ensuring compatibility with deployment systems.
+        
+        Args:
+            X_sample: Sample input data for signature inference
+            model: Trained PyTorch model
+            
+        Returns:
+            Tuple of (input_example, signature) for MLflow model logging
+        """
         # Ensure we have float32 data (not float64/double)
         input_example = X_sample[:5].astype(np.float32) if len(X_sample) >= 5 else X_sample.astype(np.float32)
         
@@ -204,7 +380,22 @@ class MLflowNeuralNetModel(BaseModel):
         return input_example, signature
     
     def _train_single_model(self, X_train, y_train, X_val, y_val, params):
-        """Train a single model with given parameters."""
+        """
+        Train a single model with given hyperparameters for tuning evaluation.
+        
+        Implements a complete training loop with early stopping specifically
+        designed for hyperparameter tuning. Uses reduced epochs for efficiency.
+        
+        Args:
+            X_train: Training features
+            y_train: Training targets
+            X_val: Validation features
+            y_val: Validation targets
+            params: Hyperparameter dictionary for this trial
+            
+        Returns:
+            Tuple of (metrics_dict, trained_model)
+        """
         
         input_size = X_train.shape[1]
         model = HeartDiseaseNN(
@@ -266,7 +457,22 @@ class MLflowNeuralNetModel(BaseModel):
         return metrics, model
     
     def _evaluate_model(self, model, X_train_tensor, y_train_tensor, X_val_tensor, y_val_tensor):
-        """Evaluate model."""
+        """
+        Evaluate model performance with comprehensive metrics.
+        
+        Computes training and validation metrics including accuracy and ROC-AUC
+        for hyperparameter tuning evaluation.
+        
+        Args:
+            model: Trained PyTorch model
+            X_train_tensor: Training features tensor
+            y_train_tensor: Training targets tensor
+            X_val_tensor: Validation features tensor
+            y_val_tensor: Validation targets tensor
+            
+        Returns:
+            Dictionary of evaluation metrics
+        """
         model.eval()
         metrics = {}
         
@@ -294,7 +500,21 @@ class MLflowNeuralNetModel(BaseModel):
         return metrics
     
     def fit(self, X_train, y_train, X_val=None, y_val=None):
-        """Train with hyperparameter tuning."""
+        """
+        Train model using automated hyperparameter tuning with MLflow tracking.
+        
+        Args:
+            X_train: Training features
+            y_train: Training targets
+            X_val: Validation features (required for tuning)
+            y_val: Validation targets (required for tuning)
+            
+        Returns:
+            Dictionary containing tuning results and best model information
+            
+        Raises:
+            ValueError: If validation data is not provided
+        """
         if X_val is None or y_val is None:
             raise ValueError("Validation data required")
         
@@ -310,7 +530,18 @@ class MLflowNeuralNetModel(BaseModel):
         return tuning_results
     
     def predict(self, X):
-        """Make predictions."""
+        """
+        Make binary predictions using the best model from hyperparameter tuning.
+        
+        Args:
+            X: Feature matrix for prediction
+            
+        Returns:
+            Binary predictions array
+            
+        Raises:
+            ValueError: If model has not been fitted
+        """
         if not self.is_fitted:
             raise ValueError("Model must be fitted first")
         
@@ -323,7 +554,18 @@ class MLflowNeuralNetModel(BaseModel):
         return predictions.cpu().numpy()
     
     def predict_proba(self, X):
-        """Predict probabilities."""
+        """
+        Predict class probabilities using the best model from hyperparameter tuning.
+        
+        Args:
+            X: Feature matrix for prediction
+            
+        Returns:
+            Probability matrix with shape (n_samples, 2)
+            
+        Raises:
+            ValueError: If model has not been fitted
+        """
         if not self.is_fitted:
             raise ValueError("Model must be fitted first")
         

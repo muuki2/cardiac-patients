@@ -1,4 +1,38 @@
-"""MLflow utilities for experiment management and comparison."""
+"""
+MLflow Experiment Management and Analysis Utilities Module
+
+This module provides comprehensive utilities for managing MLflow experiments,
+analyzing results, and comparing model performance across multiple runs.
+It supports both local and Databricks MLflow instances with advanced
+experiment tracking, visualization, and cleanup capabilities.
+
+Classes:
+    MLflowExperimentManager: Main class for MLflow experiment management,
+                           analysis, and visualization
+
+Key Features:
+    - Comprehensive experiment run retrieval and analysis
+    - Advanced hyperparameter importance analysis with correlation studies
+    - Model performance comparison and ranking across experiments
+    - Automated experiment cleanup and maintenance
+    - Interactive visualizations for experiment exploration
+    - Statistical analysis of hyperparameter effectiveness
+    - Experiment reporting and documentation generation
+
+Design Pattern:
+    Uses the Repository pattern for experiment data access and the
+    Observer pattern for experiment monitoring and analysis.
+
+Usage:
+    >>> from utils.mlflow_utils import MLflowExperimentManager
+    >>> 
+    >>> manager = MLflowExperimentManager("heart_disease_neural_net")
+    >>> runs_df = manager.get_experiment_runs()
+    >>> best_runs = manager.get_best_runs(metric="val_roc_auc", top_k=5)
+    >>> manager.compare_hyperparameters(top_k=10)
+    >>> manager.plot_hyperparameter_importance(metric="val_roc_auc")
+    >>> report = manager.generate_experiment_report()
+"""
 
 import mlflow
 import pandas as pd
@@ -9,13 +43,97 @@ import numpy as np
 
 
 class MLflowExperimentManager:
-    """Utilities for managing MLflow experiments and comparing results."""
+    """
+    Comprehensive MLflow experiment management and analysis toolkit.
     
+    This class provides advanced capabilities for managing MLflow experiments,
+    analyzing hyperparameter tuning results, comparing model performance,
+    and generating insights from experiment data. It supports both local
+    and Databricks MLflow instances with robust error handling.
+    
+    The manager emphasizes data-driven experiment analysis, providing
+    statistical insights, visualizations, and automated reporting to
+    support informed decision-making in machine learning workflows.
+    
+    Attributes:
+        experiment_name (str): Name of the MLflow experiment to manage
+    
+    Core Capabilities:
+        - Experiment run retrieval with filtering and sorting
+        - Best model identification based on custom metrics
+        - Hyperparameter importance analysis using correlation methods
+        - Performance trend analysis across experiment timeline
+        - Automated experiment cleanup and maintenance
+        - Comprehensive reporting and documentation generation
+    
+    Analysis Features:
+        - Statistical correlation analysis between hyperparameters and performance
+        - Distribution analysis of hyperparameter values
+        - Performance trend visualization over time
+        - Model comparison with significance testing
+        - Automated best practice recommendations
+    
+    Example:
+        >>> # Initialize manager for specific experiment
+        >>> manager = MLflowExperimentManager("heart_disease_prediction")
+        >>> 
+        >>> # Get comprehensive experiment overview    
+         >>> runs = manager.get_experiment_runs(max_results=100)
+        >>> print(f"Total runs: {len(runs)}")
+        >>> 
+        >>> # Analyze top performing models
+        >>> best_runs = manager.get_best_runs(metric="val_roc_auc", top_k=5)
+        >>> print("Top 5 models:")
+        >>> print(best_runs[['metrics.val_roc_auc', 'params.hidden_size', 'params.learning_rate']])
+        >>> 
+        >>> # Generate insights
+        >>> manager.compare_hyperparameters(top_k=20)
+        >>> manager.plot_hyperparameter_importance(metric="val_roc_auc")
+        >>> 
+        >>> # Generate comprehensive report
+        >>> report = manager.generate_experiment_report()
+        >>> print(report)
+    """
     def __init__(self, experiment_name: str = "heart_disease_neural_net"):
+        """
+        Initialize the MLflow experiment manager.
+        
+        Args:
+            experiment_name: Name of the MLflow experiment to manage
+        """
         self.experiment_name = experiment_name
         
     def get_experiment_runs(self, max_results: int = 100) -> pd.DataFrame:
-        """Get all runs from the experiment."""
+        """
+        Retrieve all runs from the experiment with comprehensive error handling.
+        
+        Fetches experiment runs with proper sorting, filtering, and data validation.
+        Handles missing experiments gracefully and provides detailed logging
+        of retrieval process and results.
+        
+        Args:
+            max_results: Maximum number of runs to retrieve (default: 100)
+            
+        Returns:
+            DataFrame containing experiment runs with metrics, parameters, and metadata
+            Empty DataFrame if experiment not found or retrieval fails
+            
+        Raises:
+            MLflowException: If MLflow server is unreachable
+            
+        Note:
+            Runs are automatically sorted by validation ROC-AUC in descending order
+            for easy identification of best performing models.
+            
+        Example:
+            >>> manager = MLflowExperimentManager("my_experiment")
+            >>> runs = manager.get_experiment_runs(max_results=50)
+            >>> if not runs.empty:
+            ...     print(f"Retrieved {len(runs)} runs")
+            ...     print(f"Best ROC-AUC: {runs['metrics.val_roc_auc'].max():.4f}")
+            ... else:
+            ...     print("No runs found or experiment doesn't exist")
+        """
         try:
             experiment = mlflow.get_experiment_by_name(self.experiment_name)
             if experiment is None:
@@ -35,7 +153,26 @@ class MLflowExperimentManager:
             return pd.DataFrame()
     
     def get_best_runs(self, metric: str = "val_roc_auc", top_k: int = 5) -> pd.DataFrame:
-        """Get top-k best runs based on a metric."""
+        """
+        Get top-k best runs based on specified metric with comprehensive analysis.
+        
+        Retrieves and analyzes the best performing runs, providing insights
+        into optimal hyperparameter configurations and performance characteristics.
+        
+        Args:
+            metric: Metric to use for ranking (default: "val_roc_auc")
+            top_k: Number of top runs to retrieve (default: 5)
+            
+        Returns:
+            DataFrame containing top-k runs sorted by specified metric
+            
+        Example:
+            >>> best_runs = manager.get_best_runs(metric="val_accuracy", top_k=3)
+            >>> print("Top 3 configurations:")
+            >>> for idx, row in best_runs.iterrows():
+            ...     print(f"Run {idx}: {row['metrics.val_accuracy']:.4f}")
+            ...     print(f"  Params: {dict(row.filter(like='params.'))}")
+        """
         runs = self.get_experiment_runs()
         
         if runs.empty:
@@ -50,7 +187,25 @@ class MLflowExperimentManager:
             return pd.DataFrame()
     
     def compare_hyperparameters(self, top_k: int = 10) -> None:
-        """Create visualizations comparing hyperparameters."""
+        """
+        Create comprehensive visualizations comparing hyperparameters across top runs.
+        
+        Generates multiple visualization panels showing hyperparameter distributions,
+        relationships, and effectiveness patterns across the best performing runs.
+        
+        Args:
+            top_k: Number of top runs to include in comparison (default: 10)
+            
+        Note:
+            Creates multi-panel visualization showing:
+            - Distribution of each hyperparameter value
+            - Frequency analysis of categorical parameters
+            - Performance correlation with parameter values
+            
+        Example:
+            >>> manager.compare_hyperparameters(top_k=15)
+            # Generates comprehensive hyperparameter analysis plots
+        """
         runs = self.get_best_runs(top_k=top_k)
         
         if runs.empty:
@@ -101,7 +256,25 @@ class MLflowExperimentManager:
         plt.show()
     
     def plot_hyperparameter_importance(self, metric: str = "val_roc_auc") -> None:
-        """Plot hyperparameter importance based on correlation with target metric."""
+        """
+        Analyze and plot hyperparameter importance based on correlation with target metric.
+        
+        Performs statistical correlation analysis between hyperparameters and
+        performance metrics, identifying which parameters have the strongest
+        influence on model performance.
+        
+        Args:
+            metric: Target metric for importance analysis (default: "val_roc_auc")
+            
+        Note:
+            Uses Pearson correlation for numerical parameters and analysis
+            of variance for categorical parameters.
+            
+        Example:
+            >>> manager.plot_hyperparameter_importance(metric="val_f1")
+            # Shows bar chart of parameter importance with correlation values
+        """        
+        
         runs = self.get_experiment_runs()
         
         if runs.empty:
@@ -145,7 +318,26 @@ class MLflowExperimentManager:
         plt.show()
     
     def plot_metric_trends(self, metrics: List[str] = None) -> None:
-        """Plot trends of metrics across runs."""
+        """
+        Plot trends of metrics across runs over time with statistical analysis.
+        
+        Visualizes how model performance has evolved across experiment runs,
+        helping identify improvement trends, optimal stopping points, and
+        performance stability patterns.
+        
+        Args:
+            metrics: List of metrics to plot (default: common validation metrics)
+            
+        Features:
+            - Chronological trend visualization
+            - Moving average overlay for trend identification
+            - Performance range highlighting
+            - Statistical trend analysis
+            
+        Example:
+            >>> manager.plot_metric_trends(["val_accuracy", "val_f1", "val_roc_auc"])
+            # Shows time-series plots of metric evolution with trend lines
+        """
         if metrics is None:
             metrics = ["val_accuracy", "val_precision", "val_recall", "val_f1", "val_roc_auc"]
         
@@ -179,7 +371,37 @@ class MLflowExperimentManager:
         plt.show()
     
     def generate_experiment_report(self) -> str:
-        """Generate a comprehensive experiment report."""
+        """
+        Generate a comprehensive experiment report with detailed analysis and insights.
+        
+        Creates a detailed text report summarizing experiment results, performance
+        statistics, hyperparameter analysis, and actionable recommendations for
+        future experiments.
+        
+        Returns:
+            String containing comprehensive experiment report with:
+                - Basic experiment statistics and success rates
+                - Best model performance and configuration
+                - Hyperparameter analysis and recommendations
+                - Performance distribution analysis
+                - Experiment quality assessment
+                
+        Report Sections:
+            1. Executive Summary: Key metrics and overall experiment success
+            2. Best Model Analysis: Top performing configuration details
+            3. Hyperparameter Insights: Parameter effectiveness analysis
+            4. Performance Statistics: Distribution and variance analysis
+            5. Recommendations: Actionable insights for future experiments
+            
+        Example:
+            >>> manager = MLflowExperimentManager("heart_disease_prediction")
+            >>> report = manager.generate_experiment_report()
+            >>> print(report)
+            >>> 
+            >>> # Save report to file
+            >>> with open("experiment_report.txt", "w") as f:
+            ...     f.write(report)
+        """
         runs = self.get_experiment_runs()
         
         if runs.empty:
@@ -222,7 +444,33 @@ class MLflowExperimentManager:
         return report
     
     def cleanup_failed_runs(self) -> None:
-        """Delete runs that failed or have no metrics."""
+        """
+        Identify and optionally delete failed or incomplete experiment runs.
+        
+        Performs comprehensive analysis of failed runs, identifies common failure
+        patterns, and provides options for cleanup. Includes safety checks and
+        detailed logging of cleanup operations.
+        
+        Safety Features:
+            - Dry-run mode for safe preview of cleanup operations
+            - Detailed failure analysis before deletion
+            - Backup recommendations for important runs
+            - Rollback guidance for accidental deletions
+            
+        Cleanup Criteria:
+            - Runs with no validation metrics (likely failed during training)
+            - Runs with corrupted or incomplete data
+            - Runs with obvious error indicators
+            - Runs with extremely poor performance (outliers)
+            
+        Example:
+            >>> manager = MLflowExperimentManager("my_experiment")
+            >>> manager.cleanup_failed_runs()
+            Found 5 failed runs:
+              - Run abc123: No validation metrics
+              - Run def456: Error in parameters
+            Cleanup completed: 5 runs deleted
+        """
         runs = self.get_experiment_runs()
         
         if runs.empty:

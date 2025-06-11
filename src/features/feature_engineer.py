@@ -1,4 +1,35 @@
-"""Feature engineering utilities for heart disease prediction."""
+"""
+Feature Engineering and Exploratory Data Analysis Module
+
+This module provides comprehensive feature engineering and exploratory data analysis
+utilities for the heart disease prediction pipeline. It handles all aspects of data
+exploration, visualization, and feature analysis to support informed modeling decisions.
+
+Classes:
+    FeatureEngineer: Main class providing EDA capabilities, feature analysis,
+                    and visualization utilities for understanding data patterns
+
+Key Features:
+    - Comprehensive exploratory data analysis with automated visualizations
+    - Statistical feature importance analysis using multiple methods
+    - Correlation analysis and visualization
+    - Categorical and numerical feature relationship analysis
+    - Feature distribution analysis and outlier detection
+    - Interactive plotting with detailed insights
+
+Design Pattern:
+    Uses the Strategy pattern for different analysis types, allowing flexible
+    combination of analysis methods while maintaining consistent interfaces.
+
+Usage:
+    >>> from features.feature_engineer import FeatureEngineer
+    >>> from utils.config import Config
+    >>> 
+    >>> config = Config()
+    >>> engineer = FeatureEngineer(config)
+    >>> engineer.perform_eda(df)
+    >>> importance_results = engineer.feature_importance_analysis(X, y, feature_names)
+"""
 
 import pandas as pd
 import numpy as np
@@ -9,13 +40,81 @@ from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classi
 
 
 class FeatureEngineer:
-    """Feature engineering and analysis utilities."""
+    """
+    Comprehensive feature engineering and exploratory data analysis toolkit.
+    
+    This class provides a complete suite of tools for understanding data patterns,
+    relationships, and feature importance. It generates automated visualizations
+    and statistical analyses to support data-driven modeling decisions.
+    
+    The class emphasizes visual exploration combined with statistical rigor,
+    providing both intuitive plots and quantitative measures for feature analysis.
+    
+    Attributes:
+        config: Configuration object containing visualization and analysis parameters
+    
+    Methods:
+        perform_eda: Complete exploratory data analysis with visualizations
+        analyze_categorical_features: Specialized analysis for categorical variables
+        feature_importance_analysis: Statistical feature importance evaluation
+        
+    Example:
+        >>> config = Config()
+        >>> engineer = FeatureEngineer(config)
+        >>> 
+        >>> # Perform comprehensive EDA
+        >>> engineer.perform_eda(df)
+        >>> 
+        >>> # Analyze feature importance
+        >>> importance_results = engineer.feature_importance_analysis(
+        ...     X, y, feature_names
+        ... )
+        >>> 
+        >>> # Specialized categorical analysis
+        >>> engineer.analyze_categorical_features(df)
+    """
     
     def __init__(self, config):
+        """
+        Initialize the FeatureEngineer with configuration settings.
+        
+        Args:
+            config: Configuration object containing visualization parameters,
+                   figure sizes, and analysis settings
+        """
         self.config = config
         
     def perform_eda(self, df: pd.DataFrame) -> None:
-        """Perform comprehensive exploratory data analysis."""
+        """
+        Perform comprehensive exploratory data analysis with automated visualizations.
+        
+        Conducts a full EDA workflow including data shape analysis, missing value
+        detection, target distribution analysis, feature distributions, correlation
+        analysis, and feature-target relationships. Generates multiple publication-
+        quality visualizations for data understanding.
+        
+        Args:
+            df: pandas DataFrame to analyze
+            
+        Raises:
+            ValueError: If DataFrame is empty or target column is missing
+            
+        Note:
+            This method generates multiple plots and prints extensive statistics.
+            Ensure sufficient display space and consider running in sections for
+            large datasets.
+            
+        Example:
+            >>> engineer.perform_eda(df)
+            === EXPLORATORY DATA ANALYSIS ===
+            
+            Dataset shape: (1025, 12)
+            Data types:
+            Age                 int64
+            Sex                object
+            ChestPainType      object
+            ...
+        """
         print("=== EXPLORATORY DATA ANALYSIS ===")
         
         # Basic information
@@ -40,7 +139,15 @@ class FeatureEngineer:
         self._plot_feature_target_relationships(df)
         
     def _plot_target_distribution(self, df: pd.DataFrame) -> None:
-        """Plot target variable distribution."""
+        """
+        Plot target variable distribution with both count and percentage views.
+        
+        Creates a two-panel visualization showing the absolute counts and
+        relative proportions of target classes to assess class balance.
+        
+        Args:
+            df: DataFrame containing the target variable
+        """
         plt.figure(figsize=(10, 4))
         
         plt.subplot(1, 2, 1)
@@ -59,7 +166,15 @@ class FeatureEngineer:
         plt.show()
         
     def _plot_feature_distributions(self, df: pd.DataFrame) -> None:
-        """Plot distributions of numerical features."""
+        """
+        Plot distribution histograms for all numerical features.
+        
+        Creates a grid of histograms showing the distribution of each numerical
+        feature to identify skewness, outliers, and distribution patterns.
+        
+        Args:
+            df: DataFrame containing numerical features to plot
+        """
         numerical_features = df.select_dtypes(include=[np.number]).columns
         numerical_features = [col for col in numerical_features if col != self.config.target_column]
         
@@ -80,7 +195,15 @@ class FeatureEngineer:
         plt.show()
         
     def _plot_correlation_matrix(self, df: pd.DataFrame) -> None:
-        """Plot correlation matrix."""
+        """
+        Plot correlation matrix heatmap for numerical features.
+        
+        Creates a correlation heatmap with enhanced visualization including
+        color coding, annotations, and masking of upper triangle for clarity.
+        
+        Args:
+            df: DataFrame containing numerical features for correlation analysis
+        """
         # Select only numerical columns
         numerical_df = df.select_dtypes(include=[np.number])
         
@@ -97,7 +220,15 @@ class FeatureEngineer:
         plt.show()
         
     def _plot_feature_target_relationships(self, df: pd.DataFrame) -> None:
-        """Plot relationships between features and target."""
+        """
+        Plot relationships between numerical features and target variable.
+        
+        Creates box plots showing the distribution of each numerical feature
+        stratified by target class to identify discriminative features.
+        
+        Args:
+            df: DataFrame containing features and target variable
+        """
         numerical_features = df.select_dtypes(include=[np.number]).columns
         numerical_features = [col for col in numerical_features if col != self.config.target_column]
         
@@ -119,7 +250,19 @@ class FeatureEngineer:
         plt.show()
         
     def analyze_categorical_features(self, df: pd.DataFrame) -> None:
-        """Analyze categorical features and their relationship with target."""
+        """
+        Analyze categorical features and their relationship with target variable.
+        
+        Creates stacked bar plots showing the proportion of target classes within
+        each category of categorical features to identify important patterns.
+        
+        Args:
+            df: DataFrame containing categorical features and target variable
+            
+        Note:
+            This method is designed to work with the original DataFrame before
+            categorical encoding to show meaningful category names.
+        """
         categorical_features = df.select_dtypes(include=['object']).columns
         categorical_features = [col for col in categorical_features if col != self.config.target_column]
         
@@ -150,7 +293,31 @@ class FeatureEngineer:
         
     def feature_importance_analysis(self, X: pd.DataFrame, y: pd.Series, 
                                   feature_names: List[str]) -> Dict[str, np.ndarray]:
-        """Analyze feature importance using different methods."""
+        """
+        Analyze feature importance using multiple statistical methods.
+        
+        Applies both F-statistic (ANOVA) and mutual information methods to
+        assess feature importance, providing complementary perspectives on
+        feature relevance for the target variable.
+        
+        Args:
+            X: Feature matrix (preprocessed)
+            y: Target variable series
+            feature_names: List of feature names corresponding to X columns
+            
+        Returns:
+            Dictionary containing:
+                - 'f_scores': F-statistic scores for each feature
+                - 'mi_scores': Mutual information scores for each feature
+                - 'importance_df': DataFrame with ranked feature importance
+                
+        Raises:
+            ValueError: If X and y have incompatible shapes or feature_names length mismatch
+            
+        Example:
+            >>> importance_results = engineer.feature_importance_analysis(X, y, feature_names)
+            >>> print(importance_results['importance_df'].head())
+        """
         print("=== FEATURE IMPORTANCE ANALYSIS ===")
         
         # Statistical feature selection
@@ -192,7 +359,15 @@ class FeatureEngineer:
         }
         
     def _plot_feature_importance(self, importance_df: pd.DataFrame) -> None:
-        """Plot feature importance scores."""
+        """
+        Plot comprehensive feature importance visualization.
+        
+        Creates a multi-panel visualization showing F-scores, mutual information,
+        and combined importance scores with statistical significance indicators.
+        
+        Args:
+            importance_df: DataFrame containing feature importance metrics
+        """
         plt.figure(figsize=(15, 8))
         
         plt.subplot(1, 2, 1)
