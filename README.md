@@ -1,10 +1,10 @@
-# 🫀 Heart Disease Prediction ML Pipeline
+# Heart Disease Prediction ML Pipeline
 
 A comprehensive machine learning project for predicting heart disease using multiple algorithms, featuring a modular architecture, extensive visualization, and experiment tracking with MLflow.
 
 **Student:** Murat Kolic
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features) 
@@ -16,11 +16,12 @@ A comprehensive machine learning project for predicting heart disease using mult
 - [Configuration](#configuration)
 - [Results & Visualization](#results--visualization)
 - [MLflow Integration](#mlflow-integration)
+- [Databricks Integration](#databricks-integration)
 - [Technologies Used](#technologies-used)
 - [Contributing](#contributing)
 - [License](#license)
 
-## 🎯 Overview
+## Overview
 
 This project implements a complete machine learning pipeline for heart disease prediction, comparing the performance of multiple algorithms including Logistic Regression, XGBoost, Support Vector Machines, and Neural Networks. The project emphasizes:
 
@@ -31,18 +32,18 @@ This project implements a complete machine learning pipeline for heart disease p
 - **Rich Visualizations**: Detailed plots and model interpretability
 - **Reproducibility**: Fixed random seeds and configuration management
 
-## ✨ Features
+## Features
 
-- 🏗️ **Modular Architecture**: Separated concerns across data loading, feature engineering, modeling, and visualization
-- 📊 **Comprehensive EDA**: Detailed exploratory data analysis with statistical insights
-- 🤖 **Multiple ML Models**: Logistic Regression, XGBoost, SVM, and Neural Networks
-- 📈 **Advanced Visualizations**: Feature importance, confusion matrices, ROC curves, and more
-- 🔬 **Experiment Tracking**: MLflow integration for model versioning and comparison
-- ⚙️ **Configurable Pipeline**: Centralized configuration management
-- 🎯 **Cross-Validation**: Stratified k-fold cross-validation for robust evaluation
-- 📱 **GPU Support**: Automatic device detection for neural network training
+-  **Modular Architecture**: Separated concerns across data loading, feature engineering, modeling, and visualization
+-  **Comprehensive EDA**: Detailed exploratory data analysis with statistical insights
+-  **Multiple ML Models**: Logistic Regression, XGBoost, SVM, and Neural Networks
+-  **Advanced Visualizations**: Feature importance, confusion matrices, ROC curves, and more
+-  **Experiment Tracking**: MLflow integration for model versioning and comparison
+-  **Configurable Pipeline**: Centralized configuration management
+-  **Cross-Validation**: Stratified k-fold cross-validation for robust evaluation
+-  **GPU Support**: Automatic device detection for neural network training
 
-## 📁 Project Structure
+##  Project Structure
 - **cardiac-patients/**
   - **data/**
     - `heart.csv`
@@ -66,7 +67,7 @@ This project implements a complete machine learning pipeline for heart disease p
 
 
 
-## 📊 Dataset
+##  Dataset
 
 The project uses the Heart Disease dataset with **918 patient records** and **11 clinical features**:
 
@@ -85,7 +86,7 @@ The project uses the Heart Disease dataset with **918 patient records** and **11
 | `ST_Slope` | Categorical | Slope of peak exercise ST segment |
 | `HeartDisease` | Binary | **Target variable** (0: No disease, 1: Disease) |
 
-## 🤖 Models Implemented
+##  Models Implemented
 
 ### 1. **Logistic Regression**
 - Linear classification with L2 regularization
@@ -108,7 +109,7 @@ The project uses the Heart Disease dataset with **918 patient records** and **11
 - PyTorch implementation with GPU support
 - Batch normalization and adaptive learning rate
 
-## 🚀 Installation
+##  Installation
 
 ### Prerequisites
 - Python 3.8+
@@ -138,7 +139,7 @@ pip install -r requirements.txt
 jupyter notebook main.ipynb
 ```
 
-## 💻 Usage
+##  Usage
 
 ### Quick Start
 
@@ -176,7 +177,7 @@ accuracy = model.score(X_test, y_test)
 print(f"Test Accuracy: {accuracy:.4f}")
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 The project uses a centralized configuration system in `src/utils/config.py`:
 
@@ -207,7 +208,7 @@ class Config:
 - **Random Seed**: 42 (for reproducibility)
 - **Device**: Automatic GPU/CPU detection
 
-## 📈 Results & Visualization
+##  Results & Visualization
 
 The project generates comprehensive visualizations:
 
@@ -229,7 +230,7 @@ The project generates comprehensive visualizations:
 - Performance metrics table
 - Hyperparameter sensitivity analysis
 
-## 🔬 MLflow Integration
+##  MLflow Integration
 
 The project includes comprehensive MLflow integration for experiment tracking:
 
@@ -244,7 +245,103 @@ mlflow ui
 ```
 Navigate to `http://localhost:5000` to view experiments.
 
-## 🛠️ Technologies Used
+## Databricks Integration
+
+This project includes comprehensive **Databricks MLflow** integration for enterprise-scale experiment tracking and model management. The integration provides seamless connectivity between local development and Databricks cloud environments.
+
+### Key Features
+
+- **Secure Authentication**: Multiple authentication methods (environment variables, tokens, CLI profiles)
+- **Automatic Fallback**: Graceful fallback from Databricks to local MLflow if connection fails
+- **User-Aware Experiments**: Intelligent experiment path generation based on user context
+- **Direct Web Access**: Automatic generation of Databricks workspace URLs
+- **Connection Testing**: Built-in validation and health checks
+
+### Setup & Configuration
+
+#### Environment Variables
+Set your Databricks credentials as environment variables:
+
+```bash
+export DATABRICKS_HOST="https://your-workspace.cloud.databricks.com"
+export DATABRICKS_TOKEN="dapi1234567890abcdef..."
+```
+
+#### Programmatic Usage
+```python
+from src.utils.databricks_config import DatabricksMLflowConfig
+
+# Initialize Databricks configuration
+config = DatabricksMLflowConfig()
+
+# Setup connection
+if config.setup_databricks_mlflow():
+    print("Connected to Databricks MLflow!")
+    
+    # Create experiment
+    experiment_path = config.create_experiment("heart_disease_ml")
+    print(f"Experiment: {experiment_path}")
+    
+    # Get web URL
+    url = config.get_experiment_url("heart_disease_ml")
+    print(f"View at: {url}")
+else:
+    print("Databricks connection failed - using local MLflow")
+```
+
+### Integration Architecture
+
+Local Development → Databricks MLflow → Databricks Workspace
+↓ ↓ ↓
+main.ipynb → Experiment Tracking → Web UI Access
+↓ ↓ ↓
+Model Training → Metrics & Artifacts → Collaboration
+
+
+
+
+
+### Experiment Organization
+
+The system automatically organizes experiments using intelligent path generation:
+
+- **User Workspace**: `/Users/{username}/heart_disease_ml`
+- **Shared Workspace**: `/Shared/mlflow_experiments/heart_disease_ml`
+- **Fallback Paths**: Multiple fallback strategies for different permission scenarios
+
+### Neural Network Integration
+
+The project's neural network model (`neural_net_mlflow_model.py`) includes built-in Databricks support:
+
+```python
+# Enable Databricks tracking
+model = MLflowNeuralNetModel(config, use_databricks=True)
+
+# Train with automatic Databricks logging
+results = model.fit(X_train, y_train, X_val, y_val)
+print(f"Using Databricks: {results['used_databricks']}")
+```
+
+### Benefits
+
+- **Enterprise Scale**: Leverage Databricks' managed MLflow for team collaboration
+- **Centralized Tracking**: All experiments stored in a single, accessible location  
+- **Security**: Enterprise-grade security and access controls
+- **Performance**: High-performance infrastructure for large-scale experiments
+- **Collaboration**: Easy sharing and comparison of experiments across team members
+
+### Fallback Strategy
+
+If Databricks connection fails, the system automatically falls back to local MLflow:
+
+1. **Primary**: Attempt Databricks connection
+2. **Validation**: Test connection with API call
+3. **Fallback**: Switch to local MLflow if Databricks unavailable
+4. **Logging**: Comprehensive logging of connection status and fallback reasons
+
+This ensures your ML pipeline runs smoothly regardless of network connectivity or Databricks availability.
+
+##  Technologies Used
 
 ### Core ML/Data Science
 - **pandas**: Data manipulation and analysis
@@ -270,7 +367,7 @@ Navigate to `http://localhost:5000` to view experiments.
 - **databricks-sdk**: Databricks platform integration
 - **lightgbm**: Alternative gradient boosting (if used)
 
-## 🔄 Workflow
+##  Workflow
 
 1. **Data Loading**: Load and validate the heart disease dataset
 2. **Exploratory Analysis**: Comprehensive statistical and visual analysis
@@ -280,7 +377,7 @@ Navigate to `http://localhost:5000` to view experiments.
 6. **Visualization**: Generate plots for model interpretation
 7. **Experiment Tracking**: Log results to MLflow for reproducibility
 
-## 📊 Performance Metrics
+## Performance Metrics
 
 All models are evaluated using:
 - **Accuracy**: Overall prediction accuracy
@@ -290,27 +387,7 @@ All models are evaluated using:
 - **ROC-AUC**: Area under the ROC curve
 - **Cross-Validation**: 5-fold stratified validation scores
 
-## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+## Contact
 
-### Development Setup
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📧 Contact
-
-**Murat Kolic** - [Your Email]
-
-Project Link: [https://github.com/yourusername/cardiac-patients](https://github.com/yourusername/cardiac-patients)
-
----
-
-⭐ **If you found this project helpful, please give it a star!** ⭐
+**Murat Kolic**
