@@ -264,7 +264,7 @@ Set your Databricks credentials as environment variables:
 
 ```bash
 export DATABRICKS_HOST="https://your-workspace.cloud.databricks.com"
-export DATABRICKS_TOKEN="dapi1234567890abcdef..."
+export DATABRICKS_TOKEN="your-databrics-token."
 ```
 
 #### Programmatic Usage
