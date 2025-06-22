@@ -200,7 +200,7 @@ class ModelEvaluator:
             >>> train_auc = results['train']['roc_auc']
             >>> test_auc = results['test']['roc_auc']
             >>> if train_auc - test_auc > 0.05:
-            ...     print("⚠️ Potential overfitting detected")
+            ...     print(" Potential overfitting detected")
         """
         
         results = {}

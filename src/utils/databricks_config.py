@@ -69,10 +69,10 @@ class DatabricksMLflowConfig:
         >>> config = DatabricksMLflowConfig()
         >>> if config.setup_databricks_mlflow():
         ...     experiment_path = config.create_experiment("heart_disease_ml")
-        ...     print(f"✅ Experiment created: {experiment_path}")
-        ...     print(f"🔗 View at: {config.get_experiment_url('heart_disease_ml')}")
+        ...     print(f" Experiment created: {experiment_path}")
+        ...     print(f" View at: {config.get_experiment_url('heart_disease_ml')}")
         ... else:
-        ...     print("❌ Databricks connection failed")
+        ...     print(" Databricks connection failed")
     """
     
     def __init__(self, 
@@ -119,9 +119,9 @@ class DatabricksMLflowConfig:
         Example:
             >>> config = DatabricksMLflowConfig()
             >>> if config.setup_databricks_mlflow():
-            ...     print("🎉 Ready to use Databricks MLflow!")
+            ...     print(" Ready to use Databricks MLflow!")
             ... else:
-            ...     print("⚠️ Falling back to local MLflow")
+            ...     print(" Falling back to local MLflow")
         """
         try:
             if self.databricks_host and self.databricks_token:

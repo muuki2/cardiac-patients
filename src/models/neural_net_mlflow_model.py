@@ -186,16 +186,16 @@ class MLflowNeuralNetModel(BaseModel):
                     # Use the correct MLflow API
                     mlflow.set_experiment(experiment_path)
                     self.databricks_success = True
-                    print(f"✅ Successfully connected to Databricks MLflow!")
-                    print(f"📊 Experiment: {experiment_path}")
-                    print(f"🔗 URL: {self.databricks_config.get_experiment_url(self.experiment_name)}")
+                    print(f" Successfully connected to Databricks MLflow!")
+                    print(f" Experiment: {experiment_path}")
+                    print(f" URL: {self.databricks_config.get_experiment_url(self.experiment_name)}")
                 else:
-                    print("❌ Databricks connection failed, falling back to local MLflow")
+                    print(" Databricks connection failed, falling back to local MLflow")
                     self._setup_local_mlflow()
                     
             except Exception as e:
-                print(f"❌ Databricks MLflow failed: {e}")
-                print("🔄 Falling back to local MLflow")
+                print(f" Databricks MLflow failed: {e}")
+                print(" Falling back to local MLflow")
                 self._setup_local_mlflow()
         else:
             self._setup_local_mlflow()
@@ -208,8 +208,8 @@ class MLflowNeuralNetModel(BaseModel):
         except:
             mlflow.create_experiment(self.experiment_name)
             mlflow.set_experiment(self.experiment_name)
-        print("🏠 Using local MLflow tracking")
-        print("💡 Run 'mlflow ui' to view results at http://localhost:5000")
+        print(" Using local MLflow tracking")
+        print(" Run 'mlflow ui' to view results at http://localhost:5000")
     
     def get_hyperparameter_grid(self) -> Dict[str, List]:
         """
@@ -266,11 +266,11 @@ class MLflowNeuralNetModel(BaseModel):
             
         Example:
             >>> results = model.hyperparameter_tuning(X_train, y_train, X_val, y_val, max_trials=20)
-            🔬 Starting hyperparameter tuning with 20 trials...
-            📊 Tracking in Databricks MLflow
-            🧪 Trial 1/20: {'hidden_size': 64, 'dropout_rate': 0.3, ...}
+             Starting hyperparameter tuning with 20 trials...
+             Tracking in Databricks MLflow
+             Trial 1/20: {'hidden_size': 64, 'dropout_rate': 0.3, ...}
             ...
-            🎯 Hyperparameter tuning completed!
+             Hyperparameter tuning completed!
         """
         
         param_grid = self.get_hyperparameter_grid()
@@ -282,18 +282,18 @@ class MLflowNeuralNetModel(BaseModel):
             combo = {key: random.choice(values) for key, values in param_grid.items()}
             param_combinations.append(combo)
         
-        print(f"🔬 Starting hyperparameter tuning with {len(param_combinations)} trials...")
+        print(f" Starting hyperparameter tuning with {len(param_combinations)} trials...")
         if self.databricks_success:
-            print("📊 Tracking in Databricks MLflow")
+            print("Tracking in Databricks MLflow")
         else:
-            print("🏠 Tracking in local MLflow")
+            print(" Tracking in local MLflow")
         
         best_score = 0
         best_params = None
         best_model = None
         
         for i, params in enumerate(param_combinations):
-            print(f"\n🧪 Trial {i+1}/{len(param_combinations)}: {params}")
+            print(f"\nTrial {i+1}/{len(param_combinations)}: {params}")
             
             with mlflow.start_run(run_name=f"trial_{i+1}"):
                 try:
@@ -321,7 +321,7 @@ class MLflowNeuralNetModel(BaseModel):
                             input_example=input_example
                         )
                     except Exception as model_log_error:
-                        print(f"⚠️  Model logging warning: {model_log_error}")
+                        print(f"Model logging warning: {model_log_error}")
                         # Log model without input example if there are issues
                         mlflow.pytorch.log_model(trained_model, "model")
                     
@@ -332,18 +332,18 @@ class MLflowNeuralNetModel(BaseModel):
                         best_params = params.copy()
                         best_model = trained_model
                         mlflow.log_metric("is_best_model", 1)
-                        print(f"✨ New best score: {val_score:.4f}")
+                        print(f" New best score: {val_score:.4f}")
                     else:
                         mlflow.log_metric("is_best_model", 0)
                         
                 except Exception as e:
-                    print(f"❌ Trial {i+1} failed: {e}")
+                    print(f"Trial {i+1} failed: {e}")
                     mlflow.log_param("error", str(e))
                     continue
         
-        print(f"\n🎯 Hyperparameter tuning completed!")
-        print(f"🏆 Best validation ROC-AUC: {best_score:.4f}")
-        print(f"⚙️  Best parameters: {best_params}")
+        print(f"\nHyperparameter tuning completed!")
+        print(f" Best validation ROC-AUC: {best_score:.4f}")
+        print(f" Best parameters: {best_params}")
         
         return {
             'best_params': best_params,
